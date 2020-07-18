@@ -142,24 +142,33 @@ int main(int argc, char *argv[])
 	struct event_packet ev_pkt;
 
 	int parseint = 1;
-	uint16_t sensitivity = 0;
+	float sensitivity = 1.0;
+	uint16_t threshold = 0;
 	uint16_t cX = 0;
 	uint16_t cY = 0;
-	uint16_t scaleX = 1;
-	uint16_t scaleY = 1;
-	printf("%d\n", argc);
+	float scaleX = 1.0;
+	float scaleY = 1.0;
+
 	for(parseint=1; parseint< argc; parseint++) {
-	  if(!strcmp(argv[parseint], "--sensitivity", strlen("--sensitivity"))) {
+	  if(!strncmp(argv[parseint], "--sensitivity", strlen("--sensitivity"))) {
 	    if(parseint == argc-1) {
-	      printf("0 Usage: %s < --sensitivity n > < --restrict x y scaleX scaleY >\n", argv[0]);
+	      printf("0 Usage: %s < --sensitivity n > < --threshold n > < --restrict x y scaleX scaleY >\n", argv[0]);
 	      exit(0);
 	    }
 	    parseint ++;
-	    sensitivity = atoi(argv[parseint]);
+	    sensitivity = atof(argv[parseint]);
 	  }
-	  else if(!strcmp(argv[parseint], "--restrict", strlen("--restrict"))) {
+      else if(!strncmp(argv[parseint], "--threshold", strlen("--threshold"))) {
+	    if(parseint == argc-1) {
+	      printf("0 Usage: %s < --sensitivity n > < --threshold n > < --restrict x y scaleX scaleY >\n", argv[0]);
+	      exit(0);
+	    }
+	    parseint ++;
+	    threshold = atoi(argv[parseint]);
+	  }
+	  else if(!strncmp(argv[parseint], "--restrict", strlen("--restrict"))) {
 	    if(argc <= parseint + 4 ) {
-	      printf("1 Usage: %s < --sensitivity n > < --restrict x y scaleX scaleY >\n", argv[0]);
+	      printf("0 Usage: %s < --sensitivity n > < --threshold n > < --restrict x y scaleX scaleY >\n", argv[0]);
 	      exit(0);
 	    }
 	    parseint ++;
@@ -167,12 +176,12 @@ int main(int argc, char *argv[])
 	    parseint ++;
 	    cY = atoi(argv[parseint]);
 	    parseint ++;
-	    scaleX = atoi(argv[parseint]);
+	    scaleX = atof(argv[parseint]);
 	    parseint ++;
-	    scaleY = atoi(argv[parseint]);
+	    scaleY = atof(argv[parseint]);
 	  }
 	  else {
-	      printf("  Usage: %s < --sensitivity n > < --restrict x y scaleX scaleY >\n", argv[0]);
+	      printf("0 Usage: %s < --sensitivity n > < --threshold n > < --restrict x y scaleX scaleY >\n", argv[0]);
 	      exit(0);	    
 	  }
 	}
@@ -206,15 +215,15 @@ int main(int argc, char *argv[])
 		ev_pkt.x = ntohs(ev_pkt.x);
 		ev_pkt.y = ntohs(ev_pkt.y);
 		ev_pkt.pressure = ntohs(ev_pkt.pressure);
-		if(ev_pkt.pressure < sensitivity)
+		if(ev_pkt.pressure < threshold)
 		  ev_pkt.pressure = 0;
-		else
-		  ev_pkt.pressure = ev_pkt.pressure - sensitivity;
+        else
+		  ev_pkt.pressure = (ev_pkt.pressure - threshold) * sensitivity;
 		  
 		printf("x: %hu, y: %hu, pressure: %hu\n", ev_pkt.x, ev_pkt.y, ev_pkt.pressure);
 
-		send_event(device, EV_ABS, ABS_X, ev_pkt.x/scaleX + cX);
-		send_event(device, EV_ABS, ABS_Y, ev_pkt.y/scaleY + cY);
+		send_event(device, EV_ABS, ABS_X, ev_pkt.x*scaleX + cX);
+		send_event(device, EV_ABS, ABS_Y, ev_pkt.y*scaleY + cY);
 		send_event(device, EV_ABS, ABS_PRESSURE, ev_pkt.pressure);
 
 		switch (ev_pkt.type) {
