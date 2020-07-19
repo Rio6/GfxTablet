@@ -3,7 +3,10 @@ package at.bitfire.gfxtablet;
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.graphics.Canvas;
 import android.graphics.Color;
+import android.graphics.Paint;
+import android.graphics.Path;
 import android.preference.PreferenceManager;
 import android.support.annotation.NonNull;
 import android.util.AttributeSet;
@@ -29,6 +32,9 @@ public class CanvasView extends View implements SharedPreferences.OnSharedPrefer
 	int maxX, maxY;
 	InRangeStatus inRangeStatus;
 
+	Paint paint = new Paint();
+	Path drawing = new Path();
+	boolean isDrawing = false;
 
     // setup
 
@@ -43,12 +49,26 @@ public class CanvasView extends View implements SharedPreferences.OnSharedPrefer
         setBackground();
         setInputMethods();
 		inRangeStatus = InRangeStatus.OutOfRange;
+
+		paint.setStyle(Paint.Style.STROKE);
+		paint.setStrokeWidth(5);
+		paint.setStrokeCap(Paint.Cap.ROUND);
     }
 
     public void setNetworkClient(NetworkClient networkClient) {
         netClient = networkClient;
         setEnabled(true);
     }
+
+	public void clearDrawing() {
+		drawing.reset();
+		invalidate();
+	}
+
+	public void toggleDrawing() {
+		isDrawing = !isDrawing;
+		invalidate();
+	}
 
 
     // settings
@@ -87,6 +107,16 @@ public class CanvasView extends View implements SharedPreferences.OnSharedPrefer
 	}
 
 	@Override
+	protected void onDraw(Canvas canvas) {
+		super.onDraw(canvas);
+		if (settings.getBoolean(SettingsActivity.KEY_DARK_CANVAS, false))
+			paint.setColor(Color.WHITE);
+		else
+			paint.setColor(Color.BLACK);
+		canvas.drawPath(drawing, paint);
+	}
+
+	@Override
 	public boolean onGenericMotionEvent(MotionEvent event) {
 		if (isEnabled()) {
 			for (int ptr = 0; ptr < event.getPointerCount(); ptr++)
@@ -119,13 +149,19 @@ public class CanvasView extends View implements SharedPreferences.OnSharedPrefer
 		if (isEnabled()) {
 			for (int ptr = 0; ptr < event.getPointerCount(); ptr++)
 				if (!acceptStylusOnly || (event.getToolType(ptr) == MotionEvent.TOOL_TYPE_STYLUS)) {
-					short nx = normalizeX(event.getX(ptr)),
-						  ny = normalizeY(event.getY(ptr)),
-						  npressure = normalizePressure(event.getPressure(ptr));
+
+					float x = event.getX(ptr), y = event.getY(ptr);
+					short nx = normalizeX(x), ny = normalizeY(y),
+							npressure = normalizePressure(event.getPressure(ptr));
 					Log.v(TAG, String.format("Touch event logged: action %d @ %f|%f (pressure %f)", event.getActionMasked(), event.getX(ptr), event.getY(ptr), event.getPressure(ptr)));
 					switch (event.getActionMasked()) {
 					case MotionEvent.ACTION_MOVE:
 						netClient.getQueue().add(new NetEvent(Type.TYPE_MOTION, nx, ny, npressure));
+
+						if(isDrawing) {
+							drawing.lineTo(x, y);
+							invalidate();
+						}
 						break;
 					case MotionEvent.ACTION_DOWN:
 						if (inRangeStatus == inRangeStatus.OutOfRange) {
@@ -133,6 +169,11 @@ public class CanvasView extends View implements SharedPreferences.OnSharedPrefer
 							netClient.getQueue().add(new NetEvent(Type.TYPE_BUTTON, nx, ny, (short)0, -1, true));
 						}
 						netClient.getQueue().add(new NetEvent(Type.TYPE_BUTTON, nx, ny, npressure, 0, true));
+
+						if(isDrawing) {
+							drawing.moveTo(x, y);
+							invalidate();
+						}
 						break;
 					case MotionEvent.ACTION_UP:
 					case MotionEvent.ACTION_CANCEL:

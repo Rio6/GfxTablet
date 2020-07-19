@@ -29,6 +29,7 @@ public class CanvasActivity extends AppCompatActivity implements View.OnSystemUi
     final Uri homepageUri = Uri.parse(("https://gfxtablet.bitfire.at"));
 
     NetworkClient netClient;
+    CanvasView canvas;
 
     SharedPreferences preferences;
     boolean fullScreen = false;
@@ -49,7 +50,7 @@ public class CanvasActivity extends AppCompatActivity implements View.OnSystemUi
         new ConfigureNetworkingTask().execute();
 
         // notify CanvasView of the network client
-        CanvasView canvas = (CanvasView)findViewById(R.id.canvas);
+        canvas = (CanvasView)findViewById(R.id.canvas);
         canvas.setNetworkClient(netClient);
     }
 
@@ -140,6 +141,15 @@ public class CanvasActivity extends AppCompatActivity implements View.OnSystemUi
             Toast.makeText(CanvasActivity.this, "Press Back button to leave full-screen mode.", Toast.LENGTH_LONG).show();
         } else
             CanvasActivity.this.getSupportActionBar().show();
+    }
+
+    // drawings
+    public void toggleDrawing(MenuItem item) {
+        canvas.toggleDrawing();
+    }
+
+    public void clearDrawing(MenuItem item) {
+        canvas.clearDrawing();
     }
 
 

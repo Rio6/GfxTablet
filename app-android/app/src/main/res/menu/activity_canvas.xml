@@ -3,6 +3,20 @@
     xmlns:app="http://schemas.android.com/apk/res-auto">
 
     <item
+        android:id="@+id/menu_clear_drawing"
+        android:icon="@android:drawable/ic_delete"
+        android:onClick="clearDrawing"
+        app:showAsAction="ifRoom"
+        android:title="@string/clearDrawing"/>
+
+    <item
+        android:id="@+id/menu_toggle_drawing"
+        android:icon="@android:drawable/ic_menu_edit"
+        android:onClick="toggleDrawing"
+        app:showAsAction="ifRoom"
+        android:title="@string/toggleDrawing"/>
+
+    <item
         android:id="@+id/menu_set_template_image"
         android:icon="@drawable/ic_action_picture"
         android:onClick="setTemplateImage"
